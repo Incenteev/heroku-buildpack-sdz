@@ -238,8 +238,8 @@ HEROKU_NODE_PATH_STRIPPED=$(strip_slashes "${NODE_PATH}")
 
 date +%s > compilation_time
 
-cat "conf/parameters.yml" | sed -e "s/__HEROKU_APP_PATH__/${HEROKU_APP_PATH_STRIPPED}/g" \
-        -e "s/__HEROKU_NODE_PATH__/${HEROKU_NODE_PATH_STRIPPED}/g" > www/app/config/parameters.yml
+#cat "conf/parameters.yml" | sed -e "s/__HEROKU_APP_PATH__/${HEROKU_APP_PATH_STRIPPED}/g" \
+#        -e "s/__HEROKU_NODE_PATH__/${HEROKU_NODE_PATH_STRIPPED}/g" > www/app/config/parameters.yml
 
 # We need this to use PHP in Sf2 task when building assets...
 export LD_LIBRARY_PATH=${BUILD_DIR}/${PHP_PATH}/icu/lib:${BUILD_DIR}/${PHP_PATH}/ext:${LD_LIBRARY_PATH}
