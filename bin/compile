@@ -256,21 +256,21 @@ if [ -f www/composer.json ]; then
   COMPOSER_URL="http://getcomposer.org/composer.phar"
   curl --silent --max-time 60 --location "$COMPOSER_URL" > www/composer.phar
   cd www
-  ../${PHP_PATH}/bin/php --php-ini ../$PHP_PATH/php.ini composer.phar install --prefer-source --no-scripts --optimize-autoloader --no-interaction
+  ../${PHP_PATH}/bin/php --php-ini ../$PHP_PATH/php.ini composer.phar install --prefer-source --optimize-autoloader --no-interaction
   cd $BUILD_DIR
 
   # This steps (building bootstrap & install requirement files) are adapted from SensioDistributionBundle/Composer/ScriptHandler.php Composer scripts)
   # Please update the following lines if the SensioDistributionBundle has changed.
-  echo "-----> Build Boostrap"
-  ${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/bin/build_bootstrap.php
-
-  echo "-----> Install requirement files"
-  cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/app/SymfonyRequirements.php www/app/SymfonyRequirements.php
-  cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/app/check.php www/app/check.php
-
-  if [ -f www/web/config.php ]; then
-    cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/web/config.php www/web/config.php
-  fi
+#  echo "-----> Build Boostrap"
+#  ${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/bin/build_bootstrap.php
+#
+#  echo "-----> Install requirement files"
+#  cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/app/SymfonyRequirements.php www/app/SymfonyRequirements.php
+#  cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/app/check.php www/app/check.php
+#
+#  if [ -f www/web/config.php ]; then
+#    cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/web/config.php www/web/config.php
+#  fi
 
   echo "-----> Delete composer.phar script"
   rm www/composer.phar
@@ -287,7 +287,7 @@ fi
 SF_DEBUG="--no-debug"
 
 # Deploying assets
-${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/app/console assets:install www/web --env=${SF_ENV} --no-interaction
+#${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/app/console assets:install www/web --env=${SF_ENV} --no-interaction
 ${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/app/console assetic:dump ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 
 # ----BOOT SCRIPT----------------------------------------------------------
@@ -311,31 +311,31 @@ function strip_slashes() {
 export PATH=/app/vendor/node/bin:/app/node_modules/.bin:/app/vendor/nginx/sbin:/app/vendor/php/bin:/app/vendor/php/sbin:/usr/local/bin:/usr/bin:/bin:\$PATH
 
 export LD_LIBRARY_PATH=/app/vendor/php/icu/lib:/app/vendor/php/ext:\$LD_LIBRARY_PATH
-cp /app/conf/php.ini /app/vendor/php/php.ini
+#cp /app/conf/php.ini /app/vendor/php/php.ini
 
-read HEROKU_PG_USER HEROKU_PG_PASSWORD HEROKU_PG_HOST HEROKU_PG_DB HEROKU_PG_PORT << HERE
-    \$(echo "import re;pg_url = '\$DATABASE_URL';pattern = re.compile('postgres://([^:]+):([^@]+)@([\.\-_a-zA-Z0-9]+):?([0-9]{0,5})/(.+)');res = pattern.search(pg_url);pg_user = res.group(1);pg_passwd = res.group(2);pg_host = res.group(3);pg_port = res.group(4);pg_db = res.group(5);print('{0} {1} {2} {3} {4}'.format(pg_user, pg_passwd, pg_host, pg_db, pg_port))" | python)
-HERE
+#read HEROKU_PG_USER HEROKU_PG_PASSWORD HEROKU_PG_HOST HEROKU_PG_DB HEROKU_PG_PORT << HERE
+#    \$(echo "import re;pg_url = '\$DATABASE_URL';pattern = re.compile('postgres://([^:]+):([^@]+)@([\.\-_a-zA-Z0-9]+):?([0-9]{0,5})/(.+)');res = pattern.search(pg_url);pg_user = res.group(1);pg_passwd = res.group(2);pg_host = res.group(3);pg_port = res.group(4);pg_db = res.group(5);print('{0} {1} {2} {3} {4}'.format(pg_user, pg_passwd, pg_host, pg_db, pg_port))" | python)
+#HERE
 
 HEROKU_APP_PATH_STRIPPED=\$(strip_slashes "/app")
 HEROKU_NODE_PATH_STRIPPED=\$(strip_slashes "$NODE_PATH")
 HEROKU_ASSETS_VERSION=\`cat /app/compilation_time\`
 
 
-cat "/app/conf/parameters.yml" | sed -e "s/__HEROKU_PG_HOST__/\${HEROKU_PG_HOST}/g" \
-	-e "s/__HEROKU_PG_DB__/\${HEROKU_PG_DB}/g" \
-	-e "s/__HEROKU_PG_PORT__/\${HEROKU_PG_PORT}/g" \
-	-e "s/__HEROKU_PG_USER__/\${HEROKU_PG_USER}/g" \
-	-e "s/__HEROKU_PG_PASSWORD__/\${HEROKU_PG_PASSWORD}/g" \
-	-e "s/__HEROKU_SENDGRID_PASSWORD__/\${SENDGRID_PASSWORD}/g" \
-	-e "s/__HEROKU_SENDGRID_USER__/\${SENDGRID_USERNAME}/g" \
-        -e "s/__HEROKU_APP_PATH__/\${HEROKU_APP_PATH_STRIPPED}/g" \
-        -e "s/__HEROKU_NODE_PATH__/\${HEROKU_NODE_PATH_STRIPPED}/g" \
-        -e "s/__HEROKU_ASSETS_VERSION__/\${HEROKU_ASSETS_VERSION}/g" > /app/www/app/config/parameters.yml
-
-cat "/app/www/app/config/config.yml" | sed -e "s/#handler_id/handler_id/g" > /app/www/app/config/config.yml.heroku
-rm -rf /app/www/app/config/config.yml
-mv /app/www/app/config/config.yml.heroku /app/www/app/config/config.yml
+#cat "/app/conf/parameters.yml" | sed -e "s/__HEROKU_PG_HOST__/\${HEROKU_PG_HOST}/g" \
+#	-e "s/__HEROKU_PG_DB__/\${HEROKU_PG_DB}/g" \
+#	-e "s/__HEROKU_PG_PORT__/\${HEROKU_PG_PORT}/g" \
+#	-e "s/__HEROKU_PG_USER__/\${HEROKU_PG_USER}/g" \
+#	-e "s/__HEROKU_PG_PASSWORD__/\${HEROKU_PG_PASSWORD}/g" \
+#	-e "s/__HEROKU_SENDGRID_PASSWORD__/\${SENDGRID_PASSWORD}/g" \
+#	-e "s/__HEROKU_SENDGRID_USER__/\${SENDGRID_USERNAME}/g" \
+#        -e "s/__HEROKU_APP_PATH__/\${HEROKU_APP_PATH_STRIPPED}/g" \
+#        -e "s/__HEROKU_NODE_PATH__/\${HEROKU_NODE_PATH_STRIPPED}/g" \
+#        -e "s/__HEROKU_ASSETS_VERSION__/\${HEROKU_ASSETS_VERSION}/g" > /app/www/app/config/parameters.yml
+#
+#cat "/app/www/app/config/config.yml" | sed -e "s/#handler_id/handler_id/g" > /app/www/app/config/config.yml.heroku
+#rm -rf /app/www/app/config/config.yml
+#mv /app/www/app/config/config.yml.heroku /app/www/app/config/config.yml
 
 EOF
 chmod +x env.sh
