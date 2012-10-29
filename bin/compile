@@ -15,7 +15,7 @@ export SF_ENV="prod"
 # ----START CONFIG-----------------------------------------------------
 
 # ----Amazon S3----
-S3_BUCKET="simpleit-heroku-builds"
+S3_BUCKET="incenteev-heroku-builds"
 
 # ----Heroku Packages----
 NGINX_VERSION=1.0.11
