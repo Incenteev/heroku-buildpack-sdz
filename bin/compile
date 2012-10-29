@@ -83,6 +83,13 @@ set -o pipefail
 
 mkdir -p $BUILD_DIR $CACHE_DIR
 
+if [ -d /app ]; then
+    echo "/app found"
+else
+    echo "/app not found"
+fi
+exit 1
+
 cd $BUILD_DIR
 
 echo "-----> Move application files into 'www' folder"
