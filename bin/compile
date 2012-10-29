@@ -85,6 +85,7 @@ mkdir -p $BUILD_DIR $CACHE_DIR
 
 if [ -d /app ]; then
     echo "/app found"
+    ls -a /app
 else
     echo "/app not found"
 fi
