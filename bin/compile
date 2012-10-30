@@ -251,6 +251,10 @@ if [ -f /app/vendor/php/php.ini ]; then
 fi;
 
 echo "---------> Adding a php.ini in /app/vendor/php (hacky but needed)"
+if [ -d /app/vendor/php ]; then
+    mkdir -p /app/vendor/php
+fi
+
 cp conf/php.ini /app/vendor/php/php.ini
 echo "extension_dir=${BUILD_DIR}/${PHP_PATH}/ext" >> /app/vendor/php/php.ini
 echo "extension=sundown.so" >> /app/vendor/php/php.ini
