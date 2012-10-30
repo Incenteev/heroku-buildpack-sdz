@@ -251,7 +251,7 @@ if [ -f /app/vendor/php/php.ini ]; then
 fi;
 
 echo "---------> Adding a php.ini in /app/vendor/php (hacky but needed)"
-if [ -d /app/vendor/php ]; then
+if [ ! -d /app/vendor/php ]; then
     mkdir -p /app/vendor/php
 fi
 
