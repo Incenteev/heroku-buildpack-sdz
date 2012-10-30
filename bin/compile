@@ -83,14 +83,6 @@ set -o pipefail
 
 mkdir -p $BUILD_DIR $CACHE_DIR
 
-if [ -d /app ]; then
-    echo "/app found"
-    ls -a /app
-else
-    echo "/app not found"
-fi
-exit 1
-
 cd $BUILD_DIR
 
 echo "-----> Move application files into 'www' folder"
@@ -167,6 +159,10 @@ if [ ! -d $PHP_PATH/ext ]; then
 fi
 cp ${PHP_PATH}/lib/php/extensions/no-debug-non-zts-20090626/sundown.so $PHP_PATH/ext/
 
+echo "------------> Adding the sundown extension in the conf"
+cd ${BUILD_DIR}
+echo "extension_dir=/app/${PHP_PATH}/ext" >> $PHP_PATH/php.ini
+echo "extension=sundown.so" >> $PHP_PATH/php.ini
 
 
 # ----Node--------------------------------
@@ -249,18 +245,20 @@ date +%s > compilation_time
 #cat "conf/parameters.yml" | sed -e "s/__HEROKU_APP_PATH__/${HEROKU_APP_PATH_STRIPPED}/g" \
 #        -e "s/__HEROKU_NODE_PATH__/${HEROKU_NODE_PATH_STRIPPED}/g" > www/app/config/parameters.yml
 
-cat >>php <<EOF
-#!/usr/bin/env bash
-${BUILD_DIR}/${PHP_PATH}/bin/php --php-ini ${BUILD_DIR}/${PHP_PATH}/php.ini \$@
-EOF
-chmod +x php
+if [ -f /app/vendor/php/php.ini ]; then
+    echo "---------> A php.ini already exists in /app/vendor/php so cannot apply the hack for our conf"
+    exit 1
+fi;
+
+echo "---------> Adding a php.ini in /app/vendor/php (hacky but needed)"
+cp conf/php.ini /app/vendor/php/php.ini
+echo "extension_dir=${BUILD_DIR}/${PHP_PATH}/ext" >> /app/vendor/php/php.ini
+echo "extension=sundown.so" >> /app/vendor/php/php.ini
 
 # We need this to use PHP in Sf2 task when building assets...
 export LD_LIBRARY_PATH=${BUILD_DIR}/${PHP_PATH}/icu/lib:${BUILD_DIR}/${PHP_PATH}/ext:${LD_LIBRARY_PATH}
-export PATH=${BUILD_DIR}:${BUILD_DIR}/${NODE_PATH}/bin:${BUILD_DIR}/node_modules/.bin:$PATH
+export PATH=${BUILD_DIR}/${NODE_PATH}/bin:${BUILD_DIR}/node_modules/.bin:${BUILD_DIR}/${PHP_PATH}/bin:$PATH
 
-echo "extension_dir=${BUILD_DIR}/${PHP_PATH}/ext" >> $PHP_PATH/php.ini
-echo "extension=sundown.so" >> $PHP_PATH/php.ini
 
 php --ini
 php -m
@@ -307,13 +305,7 @@ SF_DEBUG="--no-debug"
 #${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/app/console assets:install www/web --env=${SF_ENV} --no-interaction
 #${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/app/console assetic:dump ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 
-rm -f ${BUILD_DIR}/php
-
-echo "-----> Installing the php.ini"
-cd ${BUILD_DIR}
-cp conf/php.ini $PHP_PATH/php.ini
-echo "extension_dir=/app/${PHP_PATH}/ext" >> $PHP_PATH/php.ini
-echo "extension=sundown.so" >> $PHP_PATH/php.ini
+rm -f /app/vendor/php/php.ini
 
 # ----BOOT SCRIPT----------------------------------------------------------
 
