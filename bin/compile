@@ -341,9 +341,12 @@ touch /app/vendor/php/log/php-fpm.log
 tail -F -n 0 /app/vendor/php/log/php-fpm.log &
 
 echo "--> Booting PHP-FPM & Nginx"
-/app/sf cache:warmup ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 php-fpm
 nginx
+
+# Done after booting nginx to see if it avoids the timeout on boot
+echo "--> Warming up the cache"
+/app/sf cache:warmup ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 
 echo "--> Done!"
 EOF
