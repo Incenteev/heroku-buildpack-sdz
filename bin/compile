@@ -293,6 +293,7 @@ SF_DEBUG="--no-debug"
 
 # Deploying assets
 echo "---------> Dumping Assetic assets"
+php www/app/console assets:install www/web --env=${SF_ENV} --no-interaction
 php www/app/console assetic:dump ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 
 rm -f /app/vendor/php/php.ini
