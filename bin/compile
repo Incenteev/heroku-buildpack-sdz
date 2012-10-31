@@ -75,7 +75,7 @@ run_npm() {
 
 # ----PRE-INSTALL ACTIONS-----------------------------------------------
 
-echo "-----> SdZ Heroku Buildpack: Slug compilation start"
+echo "-----> Incenteev Heroku Buildpack: Slug compilation start"
 
 # fail fast
 set -e
@@ -211,6 +211,7 @@ if [ ! -d $NODE_PATH ]; then
   # install dependencies with npm
   echo "---------> Installing dependencies with npm $NPM_VERSION"
 
+# TODO Install from packages.json if present ?
   cd $BUILD_DIR
   run_npm install less
   run_npm rebuild less
@@ -234,23 +235,17 @@ cd $BUILD_DIR
 echo "-----> Installing Sf2 application"
 
 
-echo "---------> Install Sf2 assets"
-
 # We need to have parameters sets into Sf2 in order to build assets...
-HEROKU_APP_PATH_STRIPPED=$(strip_slashes "${BUILD_DIR}")
-HEROKU_NODE_PATH_STRIPPED=$(strip_slashes "${NODE_PATH}")
+#HEROKU_APP_PATH_STRIPPED=$(strip_slashes "${BUILD_DIR}")
+#HEROKU_NODE_PATH_STRIPPED=$(strip_slashes "${NODE_PATH}")
 
-date +%s > compilation_time
-
-#cat "conf/parameters.yml" | sed -e "s/__HEROKU_APP_PATH__/${HEROKU_APP_PATH_STRIPPED}/g" \
-#        -e "s/__HEROKU_NODE_PATH__/${HEROKU_NODE_PATH_STRIPPED}/g" > www/app/config/parameters.yml
-
+# This is clearly a hack but it allows PHP to find its php.ini
+echo "---------> Adding a php.ini in /app/vendor/php (hacky but needed)"
 if [ -f /app/vendor/php/php.ini ]; then
     echo "---------> A php.ini already exists in /app/vendor/php so cannot apply the hack for our conf"
     exit 1
 fi;
 
-echo "---------> Adding a php.ini in /app/vendor/php (hacky but needed)"
 if [ ! -d /app/vendor/php ]; then
     mkdir -p /app/vendor/php
 fi
@@ -264,8 +259,12 @@ export LD_LIBRARY_PATH=${BUILD_DIR}/${PHP_PATH}/icu/lib:${BUILD_DIR}/${PHP_PATH}
 export PATH=${BUILD_DIR}/${NODE_PATH}/bin:${BUILD_DIR}/node_modules/.bin:${BUILD_DIR}/${PHP_PATH}/bin:$PATH
 
 
-php --ini
-php -m
+echo "---------> Setting additional environment  variables"
+export HEROKU_ASSETS_VERSION=$(date +%Y%n%d%H%M)
+read HEROKU_DATABASE_USER HEROKU_DATABASE_PASSWORD HEROKU_DATABASE_HOST HEROKU_DATABASE_DB HEROKU_DATABASE_PORT << HERE
+    $(echo "\$parts = parseurl(getenv('DATABASE_URL'); \$user = isset(\$parts['user']) ? '\\'' . \$parts['user'] . '\\'' : 'null'; \$pass = isset(\$parts['pass']) ? '\\'' . \$parts['pass'] . '\\'' : 'null'; \$host = isset(\$parts['host']) ? '\\'' . \$parts['host'] . '\\'' : 'null'; \$db = isset(\$parts['path']) ? '\\'' . substr(\$parts['path'], 1) . '\\'' : 'null'; \$port = isset(\$parts['port']) ? \$parts['port'] : 'null'; printf('%s %s %s %s %s, \$user, \$pass, \$host, \$db, \$port);" | php)
+HERE
+export HEROKU_DATABASE_USER HEROKU_DATABASE_PASSWORD HEROKU_DATABASE_HOST HEROKU_DATABASE_DB HEROKU_DATABASE_PORT
 
 # check if we have Composer dependencies and vendors are not bundled
 if [ -f www/composer.json ]; then
@@ -278,19 +277,6 @@ if [ -f www/composer.json ]; then
   php composer.phar install --prefer-source --optimize-autoloader --no-interaction
   cd $BUILD_DIR
 
-  # This steps (building bootstrap & install requirement files) are adapted from SensioDistributionBundle/Composer/ScriptHandler.php Composer scripts)
-  # Please update the following lines if the SensioDistributionBundle has changed.
-#  echo "-----> Build Boostrap"
-#  ${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/bin/build_bootstrap.php
-#
-#  echo "-----> Install requirement files"
-#  cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/app/SymfonyRequirements.php www/app/SymfonyRequirements.php
-#  cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/app/check.php www/app/check.php
-#
-#  if [ -f www/web/config.php ]; then
-#    cp www/vendor/sensio/distribution-bundle/Sensio/Bundle/DistributionBundle/Resources/skeleton/web/config.php www/web/config.php
-#  fi
-
   echo "-----> Delete composer.phar script"
   rm www/composer.phar
 
@@ -302,12 +288,12 @@ if [ -d www/vendor ]; then
     find www/vendor -name .git -type d | xargs rm -rf
 fi
 
-# Sets the debug flag depending on Sf2 env (declared at the begeining of the file)
+# Sets the debug flag depending on Sf2 env (declared at the beginning of the file)
 SF_DEBUG="--no-debug"
 
 # Deploying assets
-#${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/app/console assets:install www/web --env=${SF_ENV} --no-interaction
-#${PHP_PATH}/bin/php --php-ini $PHP_PATH/php.ini www/app/console assetic:dump ${SF_DEBUG} --env=${SF_ENV} --no-interaction
+echo "---------> Dumping Assetic assets"
+php www/app/console assetic:dump ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 
 rm -f /app/vendor/php/php.ini
 
@@ -324,39 +310,9 @@ chmod +x sf
 cat >>env.sh <<EOF
 #!/usr/bin/env bash
 
-function strip_slashes() {
-  echo \$(echo "\$1" | sed -e "s/\//\\\\\\\\\//g")
-}
-
-
 export PATH=/app/vendor/node/bin:/app/node_modules/.bin:/app/vendor/nginx/sbin:/app/vendor/php/bin:/app/vendor/php/sbin:/usr/local/bin:/usr/bin:/bin:\$PATH
 
 export LD_LIBRARY_PATH=/app/vendor/php/icu/lib:/app/vendor/php/ext:\$LD_LIBRARY_PATH
-#cp /app/conf/php.ini /app/vendor/php/php.ini
-
-#read HEROKU_PG_USER HEROKU_PG_PASSWORD HEROKU_PG_HOST HEROKU_PG_DB HEROKU_PG_PORT << HERE
-#    \$(echo "import re;pg_url = '\$DATABASE_URL';pattern = re.compile('postgres://([^:]+):([^@]+)@([\.\-_a-zA-Z0-9]+):?([0-9]{0,5})/(.+)');res = pattern.search(pg_url);pg_user = res.group(1);pg_passwd = res.group(2);pg_host = res.group(3);pg_port = res.group(4);pg_db = res.group(5);print('{0} {1} {2} {3} {4}'.format(pg_user, pg_passwd, pg_host, pg_db, pg_port))" | python)
-#HERE
-
-HEROKU_APP_PATH_STRIPPED=\$(strip_slashes "/app")
-HEROKU_NODE_PATH_STRIPPED=\$(strip_slashes "$NODE_PATH")
-HEROKU_ASSETS_VERSION=\`cat /app/compilation_time\`
-
-
-#cat "/app/conf/parameters.yml" | sed -e "s/__HEROKU_PG_HOST__/\${HEROKU_PG_HOST}/g" \
-#	-e "s/__HEROKU_PG_DB__/\${HEROKU_PG_DB}/g" \
-#	-e "s/__HEROKU_PG_PORT__/\${HEROKU_PG_PORT}/g" \
-#	-e "s/__HEROKU_PG_USER__/\${HEROKU_PG_USER}/g" \
-#	-e "s/__HEROKU_PG_PASSWORD__/\${HEROKU_PG_PASSWORD}/g" \
-#	-e "s/__HEROKU_SENDGRID_PASSWORD__/\${SENDGRID_PASSWORD}/g" \
-#	-e "s/__HEROKU_SENDGRID_USER__/\${SENDGRID_USERNAME}/g" \
-#        -e "s/__HEROKU_APP_PATH__/\${HEROKU_APP_PATH_STRIPPED}/g" \
-#        -e "s/__HEROKU_NODE_PATH__/\${HEROKU_NODE_PATH_STRIPPED}/g" \
-#        -e "s/__HEROKU_ASSETS_VERSION__/\${HEROKU_ASSETS_VERSION}/g" > /app/www/app/config/parameters.yml
-#
-#cat "/app/www/app/config/config.yml" | sed -e "s/#handler_id/handler_id/g" > /app/www/app/config/config.yml.heroku
-#rm -rf /app/www/app/config/config.yml
-#mv /app/www/app/config/config.yml.heroku /app/www/app/config/config.yml
 
 EOF
 chmod +x env.sh
@@ -371,11 +327,8 @@ export PATH=/app/vendor/node/bin:/app/node_modules/.bin:/app/vendor/nginx/sbin:/
 export LD_LIBRARY_PATH=/app/vendor/php/icu/lib:/app/vendor/php/ext:\$LD_LIBRARY_PATH
 
 echo "--> Copy PHP & Nginx conf files into vendors directory"
-cp /app/conf/php-fpm.conf /app/vendor/php/etc/php-fpm.conf
 cp /app/vendor/php/share/php/fpm/status.html /app/status.html
 erb /app/conf/nginx.conf.erb > /app/vendor/nginx/conf/nginx.conf
-
-echo "extension=sundown.so" >> /app/vendor/php/php.ini
 
 if [ -d /app/www/app/cache ]; then
     rm -rf /app/www/app/cache
@@ -403,6 +356,7 @@ touch /app/vendor/php/log/php-fpm.log
 tail -F -n 0 /app/vendor/php/log/php-fpm.log &
 
 echo "--> Booting PHP-FPM & Nginx"
+/app/sf cache:warmup ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 php-fpm
 nginx
 
