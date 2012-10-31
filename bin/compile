@@ -303,28 +303,12 @@ echo "-----> Installing boot script"
 
 cat >>sf <<EOF
 #!/usr/bin/env bash
-/app/env.sh && /app/vendor/php/bin/php /app/www/app/console \$@
+/app/vendor/php/bin/php /app/www/app/console \$@
 EOF
 chmod +x sf
 
-cat >>env.sh <<EOF
-#!/usr/bin/env bash
-
-export PATH=/app/vendor/node/bin:/app/node_modules/.bin:/app/vendor/nginx/sbin:/app/vendor/php/bin:/app/vendor/php/sbin:/usr/local/bin:/usr/bin:/bin:\$PATH
-
-export LD_LIBRARY_PATH=/app/vendor/php/icu/lib:/app/vendor/php/ext:\$LD_LIBRARY_PATH
-
-EOF
-chmod +x env.sh
-
 cat >>boot.sh <<EOF
 #!/usr/bin/env bash
-
-/app/env.sh
-
-export PATH=/app/vendor/node/bin:/app/node_modules/.bin:/app/vendor/nginx/sbin:/app/vendor/php/bin:/app/vendor/php/sbin:/usr/local/bin:/usr/bin:/bin:\$PATH
-
-export LD_LIBRARY_PATH=/app/vendor/php/icu/lib:/app/vendor/php/ext:\$LD_LIBRARY_PATH
 
 echo "--> Copy PHP & Nginx conf files into vendors directory"
 cp /app/vendor/php/share/php/fpm/status.html /app/status.html
