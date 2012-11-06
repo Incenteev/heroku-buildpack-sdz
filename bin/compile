@@ -298,6 +298,10 @@ php www/app/console assetic:dump ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 
 rm -f /app/vendor/php/php.ini
 
+# The cache cannot be kept as it contains some absolute path using the temp folder
+echo "---------> Removing the cache"
+rm -rf ${BUILD_DIR}/www/app/cache/*
+
 # ----BOOT SCRIPT----------------------------------------------------------
 
 echo "-----> Installing boot script"
