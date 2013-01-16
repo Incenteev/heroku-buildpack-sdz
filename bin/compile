@@ -75,9 +75,9 @@ mkdir -p $BUILD_DIR $CACHE_DIR
 cd $BUILD_DIR
 
 echo "-----> Move application files into 'www' folder"
-mkdir -p $CACHE_DIR/www
-mv * $CACHE_DIR/www
-mv $CACHE_DIR/www .
+mkdir -p $CACHE_DIR/tmp
+mv * $CACHE_DIR/tmp
+mv $CACHE_DIR/tmp www
 
 # keep conf folder
 if [ -d www/app/heroku ]; then
