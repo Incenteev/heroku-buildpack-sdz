@@ -187,16 +187,37 @@ export HEROKU_DATABASE_USER HEROKU_DATABASE_PASSWORD HEROKU_DATABASE_HOST HEROKU
 
 # check if we have Composer dependencies and vendors are not bundled
 if [ -f www/composer.json ]; then
+    echo "-----> Installing Composer dependencies"
+
+    CACHE_STORE_DIR="${CACHE_DIR}/www/vendor"
+    CACHE_TARGET_DIR="${BUILD_DIR}/www/vendor"
+
+    if [ -d $CACHE_TARGET_DIR ]; then
+        rm -rf $CACHE_TARGET_DIR
+    fi
+
+    if [ -d $CACHE_STORE_DIR ]; then
+        echo "---------> Copying the cached Composer dependencies"
+        cp -r $CACHE_STORE_DIR $CACHE_TARGET_DIR
+    fi
+
   GIT_DIR_ORIG=$GIT_DIR
   unset GIT_DIR
-  echo "-----> Installing Composer dependencies"
+  echo "---------> Installing the uptodate dependencies"
   COMPOSER_URL="http://getcomposer.org/composer.phar"
   curl --silent --max-time 60 --location "$COMPOSER_URL" > www/composer.phar
   cd www
   php composer.phar install --prefer-source --optimize-autoloader --no-interaction
   cd $BUILD_DIR
 
-  echo "-----> Delete composer.phar script"
+    if [ -d $CACHE_TARGET_DIR ]; then
+        echo "---------> Caching the Composer dependencies"
+        rm -rf $CACHE_STORE_DIR
+        mkdir -p $(dirname $CACHE_STORE_DIR)
+        cp -a $CACHE_TARGET_DIR $CACHE_STORE_DIR
+    fi
+
+  echo "---------> Delete composer.phar script"
   rm www/composer.phar
 
   export GIT_DIR=$GIT_DIR_ORIG
