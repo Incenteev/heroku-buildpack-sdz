@@ -62,17 +62,6 @@ mktmpdir() {
   echo $dir
 }
 
-run_npm() {
-  command="$1"
-  module="$2"
-  HOME="$BUILD_DIR" $BUILD_DIR/$NODE_PATH/bin/npm $command $module 2>&1 | indent
-
-  if [ "${PIPESTATUS[*]}" != "0 0" ]; then
-    echo " !     Failed to $command dependencies with npm"
-    exit 1
-  fi
-}
-
 # ----PRE-INSTALL ACTIONS-----------------------------------------------
 
 echo "-----> Incenteev Heroku Buildpack: Slug compilation start"
@@ -99,11 +88,6 @@ if [ -d www/app/heroku ]; then
         exit 1
     fi
     rm -rf www/app/heroku
-fi
-
-# keep Node.js dependency file
-if [ -f www/package.json ]; then
-  mv www/package.json .
 fi
 
 # keep Procfile
@@ -165,67 +149,6 @@ echo "extension_dir=/app/${PHP_PATH}/ext" >> $PHP_PATH/php.ini
 echo "extension=sundown.so" >> $PHP_PATH/php.ini
 
 
-# ----Node--------------------------------
-echo "-----> Installing Node"
-cd ${BUILD_DIR}
-
-if [ ! -d $NODE_PATH ]; then
-  echo "---------> Bundling Node v${NODE_VERSION}"
-  mkdir -p $NODE_PATH && cd $NODE_PATH
-  curl --silent --max-time 500 --location $NODE_URL | tar xz
-  cd ..
-
-  VENDORED_SCONS="$(mktmpdir scons)"
-  cd $VENDORED_SCONS
-  curl --silent --max-time 500 --location $SCONS_URL | tar xz
-
-  PATH="$VENDORED_SCONS:${BUILD_DIR}/$NODE_PATH/bin:$PATH"
-  INCLUDE_PATH="${BUILD_DIR}/$NODE_PATH/include"
-  export CPATH="$INCLUDE_PATH"
-  export CPPPATH="$INCLUDE_PATH"
-
-  CACHE_STORE_DIR="$CACHE_DIR/node_modules/$NPM_VERSION"
-  CACHE_TARGET_DIR="$BUILD_DIR/node_modules"
-
-  # unpack existing cache
-  if [ -d $CACHE_STORE_DIR ]; then
-
-    # generate a place to put node_modules
-    TEMP_NODE_MODULES_DIR=$(mktmpdir node_modules)
-
-    # move existing node_modules out of the way
-    if [ -d $CACHE_TARGET_DIR ]; then
-      mv $CACHE_TARGET_DIR $TEMP_NODE_MODULES_DIR/
-    fi
-
-    # copy the cached node_modules in
-    mkdir -p $CACHE_TARGET_DIR
-    cp -R $CACHE_STORE_DIR/* $CACHE_TARGET_DIR/
-
-    # move existing node_modules back into place
-    if [ -d $TEMP_NODE_MODULES_DIR/node_modules ]; then
-      cp -R $TEMP_NODE_MODULES_DIR/node_modules/* $CACHE_TARGET_DIR/
-    fi
-  fi
-
-  # install dependencies with npm
-  echo "---------> Installing dependencies with npm $NPM_VERSION"
-
-# TODO Install from packages.json if present ?
-  cd $BUILD_DIR
-  run_npm install less
-  run_npm rebuild less
-
-  echo "---------> Dependencies installed" | indent
-
-  # repack cache with new assets
-  if [ -d $CACHE_TARGET_DIR ]; then
-    rm -rf $CACHE_STORE_DIR
-    mkdir -p $(dirname $CACHE_STORE_DIR)
-    cp -a $CACHE_TARGET_DIR $CACHE_STORE_DIR
-  fi
-fi
-
 # ----END INSTALL SERVICES-------------------------------------------------
 
 
@@ -234,10 +157,6 @@ cd $BUILD_DIR
 
 echo "-----> Installing Sf2 application"
 
-
-# We need to have parameters sets into Sf2 in order to build assets...
-#HEROKU_APP_PATH_STRIPPED=$(strip_slashes "${BUILD_DIR}")
-#HEROKU_NODE_PATH_STRIPPED=$(strip_slashes "${NODE_PATH}")
 
 # This is clearly a hack but it allows PHP to find its php.ini
 echo "---------> Adding a php.ini in /app/vendor/php (hacky but needed)"
@@ -256,7 +175,7 @@ echo "extension=sundown.so" >> /app/vendor/php/php.ini
 
 # We need this to use PHP in Sf2 task when building assets...
 export LD_LIBRARY_PATH=${BUILD_DIR}/${PHP_PATH}/icu/lib:${BUILD_DIR}/${PHP_PATH}/ext:${LD_LIBRARY_PATH}
-export PATH=${BUILD_DIR}/${NODE_PATH}/bin:${BUILD_DIR}/node_modules/.bin:${BUILD_DIR}/${PHP_PATH}/bin:$PATH
+export PATH=${BUILD_DIR}/${PHP_PATH}/bin:$PATH
 
 
 echo "---------> Setting additional environment  variables"
