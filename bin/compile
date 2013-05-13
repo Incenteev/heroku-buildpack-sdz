@@ -272,6 +272,7 @@ echo "--> Enabled Sf2 logging system"
 touch /app/www/app/logs/prod.log /app/www/app/logs/dev.log
 tail -F -n 0 /app/www/app/logs/prod.log &
 tail -F -n 0 /app/www/app/logs/dev.log &
+tail -F -n 0 /app/www/app/logs/worker.log &
 
 echo "--> Enabled Nginx logging system"
 touch /app/vendor/nginx/logs/access.log /app/vendor/nginx/logs/error.log
