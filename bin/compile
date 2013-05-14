@@ -137,7 +137,7 @@ echo "extension=sundown.so" >> $PHP_PATH/php.ini
 # ----INSTALL APPLICATION--------------------------------------------------
 cd $BUILD_DIR
 
-echo "-----> Installing Sf2 application"
+echo "-----> Installing Silex application"
 
 
 # This is clearly a hack but it allows PHP to find its php.ini
@@ -162,10 +162,6 @@ export PATH=${BUILD_DIR}/${PHP_PATH}/bin:$PATH
 
 echo "---------> Setting additional environment  variables"
 export HEROKU_ASSETS_VERSION=$(date +%Y%m%d%H%M)
-read HEROKU_DATABASE_USER HEROKU_DATABASE_PASSWORD HEROKU_DATABASE_HOST HEROKU_DATABASE_DB HEROKU_DATABASE_PORT << HERE
-    $(echo "<?php \$parts = parse_url(getenv('DATABASE_URL')); \$user = isset(\$parts['user']) ? '\\'' . \$parts['user'] . '\\'' : 'null'; \$pass = isset(\$parts['pass']) ? '\\'' . \$parts['pass'] . '\\'' : 'null'; \$host = isset(\$parts['host']) ? '\\'' . \$parts['host'] . '\\'' : 'null'; \$db = isset(\$parts['path']) ? '\\'' . substr(\$parts['path'], 1) . '\\'' : 'null'; \$port = isset(\$parts['port']) ? \$parts['port'] : 'null'; printf('%s %s %s %s %s', \$user, \$pass, \$host, \$db, \$port);" | php)
-HERE
-export HEROKU_DATABASE_USER HEROKU_DATABASE_PASSWORD HEROKU_DATABASE_HOST HEROKU_DATABASE_DB HEROKU_DATABASE_PORT
 
 # check if we have Composer dependencies and vendors are not bundled
 if [ -f www/composer.json ]; then
@@ -212,11 +208,6 @@ fi
 
 # Sets the debug flag depending on Sf2 env (declared at the beginning of the file)
 SF_DEBUG="--no-debug"
-
-# Deploying assets
-echo "---------> Dumping Assetic assets"
-php www/app/console assets:install www/web --env=${SF_ENV} --no-interaction
-php www/app/console assetic:dump ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 
 rm -f /app/vendor/php/php.ini
 
@@ -269,10 +260,6 @@ tail -F -n 0 /app/vendor/php/log/php-fpm.log &
 echo "--> Booting PHP-FPM & Nginx"
 php-fpm
 nginx
-
-# Done after booting nginx to see if it avoids the timeout on boot
-echo "--> Warming up the cache"
-/app/sf cache:warmup ${SF_DEBUG} --env=${SF_ENV} --no-interaction
 
 echo "--> Done!"
 EOF
