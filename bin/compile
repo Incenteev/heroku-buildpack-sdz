@@ -123,7 +123,7 @@ cd ${BUILD_DIR}
 if [ ! -d $PHP_PATH/ext ]; then
   mkdir $PHP_PATH/ext
 fi
-cp ${PHP_PATH}/lib/php/extensions/no-debug-non-zts-20090626/sundown.so $PHP_PATH/ext/
+cp ${PHP_PATH}/lib/php/extensions/no-debug-non-zts-20100525/sundown.so $PHP_PATH/ext/
 
 echo "------------> Adding the sundown extension in the conf"
 cd ${BUILD_DIR}
