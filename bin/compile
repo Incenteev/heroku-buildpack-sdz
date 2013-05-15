@@ -189,7 +189,7 @@ if [ -f www/composer.json ]; then
   COMPOSER_URL="http://getcomposer.org/composer.phar"
   curl --silent --max-time 60 --location "$COMPOSER_URL" > www/composer.phar
   cd www
-  php composer.phar install --prefer-source --optimize-autoloader --no-interaction
+  php composer.phar install --prefer-source --optimize-autoloader --no-interaction --no-dev
   cd $BUILD_DIR
 
     if [ -d $CACHE_TARGET_DIR ]; then
