@@ -178,7 +178,7 @@ if [ -f www/composer.json ]; then
         rm -rf $CACHE_TARGET_DIR
     fi
 
-    if [ -d $CACHE_STORE_DIR ]; then
+    if [ -d $CACHE_STORE_DIR ] && [ -z "$REBUILD_COMPOSER_CACHE"  ]; then
         echo "-------------> Copying the cached Composer dependencies"
         cp -r $CACHE_STORE_DIR $CACHE_TARGET_DIR
     fi
