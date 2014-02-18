@@ -10,6 +10,10 @@
 
 # bin/compile <build-dir> <cache-dir> <env-dir>
 
+# fail fast
+set -e
+set -o pipefail
+
 export SF_ENV="prod"
 
 # ----START CONFIG-----------------------------------------------------
@@ -66,10 +70,6 @@ export_env_dir() {
 # ----PRE-INSTALL ACTIONS-----------------------------------------------
 
 echo "-----> Incenteev Heroku Buildpack: Slug compilation start"
-
-# fail fast
-set -e
-set -o pipefail
 
 mkdir -p $BUILD_DIR $CACHE_DIR
 
