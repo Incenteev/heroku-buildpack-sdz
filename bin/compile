@@ -8,7 +8,7 @@
 #                                                                 #
 ###################################################################
 
-# bin/compile <build-dir> <cache-dir>
+# bin/compile <build-dir> <cache-dir> <env-dir>
 
 export SF_ENV="prod"
 
@@ -29,6 +29,7 @@ PHP_PATH="vendor/php"
 # ----Local folders----
 BUILD_DIR=$1
 CACHE_DIR=$2
+ENV_DIR=$3
 BIN_DIR=$(dirname $0)
 LP_DIR=`cd $(dirname $0); cd ..; pwd`
 
@@ -47,11 +48,19 @@ function strip_slashes() {
   echo $(echo "$1" | sed -e "s/\//\\\\\//g")
 }
 
-mktmpdir() {
-  dir=$(mktemp -t $1-XXXX)
-  rm -rf $dir
-  mkdir -p $dir
-  echo $dir
+# Exporting Heroku environment variables during the compilation
+# code is taken from https://devcenter.heroku.com/articles/buildpack-api-staging?preview=1#bin-compile
+export_env_dir() {
+  env_dir=$1
+  whitelist_regex=${2:-''}
+  blacklist_regex=${3:-'^(PATH|GIT_DIR|CPATH|CPPATH|LD_PRELOAD|LIBRARY_PATH)$'}
+  if [ -d "$env_dir" ]; then
+    for e in $(ls $env_dir); do
+      echo "$e" | grep -E "$whitelist_regex" | grep -qvE "$blacklist_regex" &&
+      export "$e=$(cat $env_dir/$e)"
+      :
+    done
+  fi
 }
 
 # ----PRE-INSTALL ACTIONS-----------------------------------------------
@@ -160,7 +169,8 @@ export LD_LIBRARY_PATH=${BUILD_DIR}/${PHP_PATH}/icu/lib:${BUILD_DIR}/${PHP_PATH}
 export PATH=${BUILD_DIR}/${PHP_PATH}/bin:$PATH
 
 
-echo "---------> Setting additional environment  variables"
+echo "---------> Setting additional environment variables"
+export_env_dir $ENV_DIR
 export HEROKU_ASSETS_VERSION=$(date +%Y%m%d%H%M)
 read HEROKU_DATABASE_USER HEROKU_DATABASE_PASSWORD HEROKU_DATABASE_HOST HEROKU_DATABASE_DB HEROKU_DATABASE_PORT << HERE
     $(echo "<?php \$parts = parse_url(getenv('DATABASE_URL')); \$user = isset(\$parts['user']) ? '\\'' . \$parts['user'] . '\\'' : 'null'; \$pass = isset(\$parts['pass']) ? '\\'' . \$parts['pass'] . '\\'' : 'null'; \$host = isset(\$parts['host']) ? '\\'' . \$parts['host'] . '\\'' : 'null'; \$db = isset(\$parts['path']) ? '\\'' . substr(\$parts['path'], 1) . '\\'' : 'null'; \$port = isset(\$parts['port']) ? \$parts['port'] : 'null'; printf('%s %s %s %s %s', \$user, \$pass, \$host, \$db, \$port);" | php)
